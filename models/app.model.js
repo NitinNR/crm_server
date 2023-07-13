@@ -466,7 +466,6 @@ App.AppDataInsert = (adminId, appName, configs, Name, result) => {
                     if (err) {
                         reject(err);
                     } else {
-                        console.log("private db conn:",deskConnection);
                         resolve(deskConnection);
                     }
                 });
@@ -483,7 +482,6 @@ App.AppDataInsert = (adminId, appName, configs, Name, result) => {
             }
         });
     }).then(dbconn => {
-        console.log("IN THEN >>>>>>>>.");
         verifyLspace(AccountID,ApiKey,dbconn,(ack,data)=>{
             
             if (ack) {

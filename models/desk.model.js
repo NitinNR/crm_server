@@ -122,7 +122,6 @@ Desk.get_tag_based_users = ({ adminId, account_id, page_size, offset, tags }, ca
 }
 
 Desk.get_dashboard_details = (adminId, desk_account_id, callback) => {
-    console.log(adminId, desk_account_id);
 
     let dbconnection = null;
     getDbConfigs(adminId).then(conn => {
@@ -155,7 +154,6 @@ Desk.get_dashboard_details = (adminId, desk_account_id, callback) => {
 
             const recent_users_query = `SELECT * from contacts where account_id = ${desk_account_id} and phone_number <> 'NULL' ORDER BY id DESC LIMIT 6;`;
             dbconnection?.query(recent_users_query, (err2, res2) => {
-                // console.log(res2);
                 res2 = res2.rows
                 if (res2) {
 
