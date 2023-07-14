@@ -29,7 +29,7 @@ function doPreperation(account_id, broadcastId) {
         const space_id = data[0].configs.AccountID
 
         // Broadacst details from which to get the tags
-        get_broadcast_details(account_id, broadcastId, (ack, broadcast_details) => {
+        get_broadcast_details(account_id, broadcastId, async (ack, broadcast_details) => {
 
           // console.log("broadcast_details:", broadcast_details);
           if (ack) {
@@ -43,25 +43,27 @@ function doPreperation(account_id, broadcastId) {
               console.log("going for schedule");
               let contacts = null;
               if (broadcast_details.audience_type === 0) {
-                  console.log("get tag based contacts");
-                  const tags = broadcast_details.audience.split(",")
-                  console.log("space_id tags:",space_id,tags);
-                  // get the contacts details based on the tags
-                  desk.get_contacts_based_on_tags(account_id,space_id, tags, (ack, data) => {
-                    if (ack && data.length > 0) {
-                      contacts = data
-                      sendWhatsApp(account_id,space_id, contacts, broadcast_details,0)
-                    }else{
-                      console.log("eeeeeeeeeeeeetttttttt");
-                      console.log(ack,data);
-                    }
-                  })
+                console.log("get tag based contacts");
+                const tags = broadcast_details.audience.split(",")
+                console.log("space_id tags:", space_id, tags);
+                // get the contacts details based on the tags
+                desk.get_contacts_based_on_tags(account_id, space_id, tags, (ack, data) => {
+                  if (ack && data.length > 0) {
+                    contacts = data
+                    sendWhatsApp(account_id, space_id, contacts, broadcast_details, 0)
+                  } else {
+                    console.log("eeeeeeeeeeeeetttttttt");
+                    console.log(ack, data);
+                  }
+                })
 
+              } else if (broadcast_details.audience_type === 1) {
+                console.log("custome contacts");
+                contacts = broadcast_details.audience
+                contacts = contacts.split(",")
+                sendWhatsApp(account_id, space_id, contacts, broadcast_details, 1)
               } else {
-                  console.log("custome contacts");
-                  contacts = broadcast_details.audience
-                  contacts = contacts.split(",")
-                  sendWhatsApp(account_id,space_id, contacts, broadcast_details,1)
+                sendWhatsApp(account_id, space_id, contacts, broadcast_details, 2)
               }
 
             } else {
@@ -92,11 +94,11 @@ function doPreperation(account_id, broadcastId) {
 }
 
 
-function sendWhatsApp(admin_id,space_id, contacts, broadcast_details,contacts_type) {
+function sendWhatsApp(admin_id, space_id, contacts, broadcast_details, contacts_type) {
 
-  console.log("===========contacts=========:",contacts);
+  console.log("===========contacts=========:", contacts);
 
-  desk.get_whatsapp_channel_details(admin_id,space_id, (ack, configs) => {
+  desk.get_whatsapp_channel_details(admin_id, space_id, async (ack, configs) => {
     if (ack) {
       const account_provider_configs = configs[0].provider_config;
       const account_configs = configs[0];
@@ -108,18 +110,49 @@ function sendWhatsApp(admin_id,space_id, contacts, broadcast_details,contacts_ty
       const template_name = template.name
       const code = template.language
 
-      if(contacts_type === 0){
+      if (contacts_type === 0) {
         for (let i = 0; i < contacts.length; i++) {
           console.log(phone_number_id, api_key, template_name, code, contacts[i].phone_number);
-          sendMessage(phone_number_id,api_key,template_name,code,contacts[i].phone_number)
+          sendMessage(phone_number_id, api_key, template_name, code, contacts[i].phone_number)
         }
-      }else{
+      } else if (contacts_type === 1) {
         for (let i = 0; i < contacts.length; i++) {
-          sendMessage(phone_number_id,api_key,template_name,code,contacts[i])
+          sendMessage(phone_number_id, api_key, template_name, code, contacts[i])
+        }
+      } else {
+        console.log("sending to alll");
+        // send to all
+        for await (const dataChunk of getDataChunks(admin_id, space_id)) {
+          dataChunk?.data.forEach(contact => {
+            sendMessage(phone_number_id, api_key, template_name, code, contact.phone_number)
+          });
+          await new Promise(resolve => setTimeout(resolve, 6000));
+
         }
       }
     }
   })
+}
+
+async function* getDataChunks(admin_id, space_id) {
+  let offset = 0;
+  // let repeat = 0;
+  const chunksize = 50;
+  let hasMore = true
+
+  // while (hasMore && repeat < 3) {
+  while (hasMore) {
+    const dataChunk = await desk.get_all_contacts(admin_id, space_id, offset, chunksize)
+    if (dataChunk?.data.length > 0) {
+      // repeat += 1;
+      yield dataChunk
+      offset += chunksize
+
+    } else {
+      hasMore = false
+    }
+
+  }
 }
 
 module.exports = { scheduleJob, scheduleWhatsAppBroadCast };

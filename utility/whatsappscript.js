@@ -30,8 +30,8 @@ const sendMessage = async (phone_number_id, api_key, template_name, code, phone_
     // sending text message to whatsapp
     axios.request(config)
         .then((response) => {
-            console.log("JSON.stringify(response.data)");
-            console.log(JSON.stringify(response.data));
+            // console.log("JSON.stringify(response.data)");
+            // console.log(JSON.stringify(response.data));
         })
         .catch((error) => {
             console.log("error");

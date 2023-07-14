@@ -133,7 +133,7 @@ Desk.get_dashboard_details = (adminId, desk_account_id, callback) => {
         let query = `SELECT 
     (SELECT COUNT(*) FROM contacts WHERE account_id = ${desk_account_id}) as users,
     (SELECT COUNT(*) FROM messages WHERE account_id = ${desk_account_id}) AS message_report,
-    (SELECT COUNT(*) FROM contacts WHERE account_id = ${desk_account_id} AND created_at > now() - INTERVAL '7 day') AS uinterval,
+    (SELECT COUNT(*) FROM contacts WHERE account_id = ${desk_account_id} AND created_at > now() - INTERVAL '30 day') AS uinterval,
     (SELECT COUNT(*) FROM messages WHERE account_id = ${desk_account_id} AND created_at > now() - INTERVAL '24 hour') AS ainterval,
     (SELECT COUNT(*) FROM messages WHERE account_id = ${desk_account_id} AND content != '' AND created_at > now() - INTERVAL '30 day') AS monthlyMsgreport;`
         dbconnection?.query(query, (err, res) => {
@@ -144,13 +144,14 @@ Desk.get_dashboard_details = (adminId, desk_account_id, callback) => {
                     statusInfo.status = true;
                     statusInfo.data.cards.totalUsers = parseInt(res[0]["users"])
                     statusInfo.data.cards.totalMsgs = parseInt(res[0]["message_report"])
-                    statusInfo.data.cards.SevenDayUser = parseInt(res[0]["uinterval"])
+                    statusInfo.data.cards.monthlyUsers = parseInt(res[0]["uinterval"])
                     statusInfo.data.cards.totalCapData = parseInt(res[0]["ainterval"])
-                    statusInfo.data.cards.monthlyMsgreport = parseInt(res[0]["monthlyMsgreport"])
+                    statusInfo.data.cards.monthlyMsgreport = parseInt(res[0]["monthlymsgreport"])
                     statusInfo.data.cards.recentusers = []
                     statusInfo.data.cards.userengagements = {}
                     statusInfo.ack = "Data found!";
                 }
+                // console.log(statusInfo);
             } else if (err) { return callback(false, []); }
 
             const recent_users_query = `SELECT * from contacts where account_id = ${desk_account_id} and phone_number <> 'NULL' ORDER BY id DESC LIMIT 6;`;
@@ -317,6 +318,36 @@ Desk.get_contacts_based_on_tags = (adminId, account_id, tags, callback) => {
             return callback(true, res.rows)
         })
     })
+}
+
+Desk.get_all_contacts = async (adminId, account_id, offset, chunksize) => {
+
+    return new Promise((resolve,reject) => {
+
+        const all_query = `SELECT id,phone_number FROM contacts WHERE account_id = $1 ORDER BY "id" LIMIT ${chunksize} OFFSET ${offset}`;
+        getDbConfigs(adminId).then(dbconnection => {
+
+            dbconnection.query(all_query, [account_id], async (err, res) => {
+                if (err) return reject({ data: [] })
+                return resolve({ data: res.rows })
+            })
+
+        })
+
+    })
+
+    // const all_query = `SELECT id,phone_number FROM contacts WHERE account_id = $1 LIMIT ${chunksize} offset ${offset}`;
+    // getDbConfigs(adminId).then(dbconnection => {
+
+    //     dbconnection.query(all_query, [account_id], async (err, res) => {
+    //         console.log("eeeerrr>", err);
+    //         console.log("res>", res.rows.length);
+    //         if (err) return { data: [] }
+    //         return { data: res.rows }
+    //     })
+
+    // })
+
 }
 
 Desk.get_whatsapp_channel_details = (adminId, account_id, callback) => {
