@@ -285,7 +285,7 @@ Desk.get_whatsapp_templates = (adminId, account_id, channel_id, callback) => {
     getDbConfigs(adminId).then(dbconnection => {
 
         dbconnection.query(whatsapp_template_query, [channel_id, account_id], async (err, res) => {
-            console.log(err, res);
+            // console.log(err, res);
             if (err) return callback(false, [])
             return callback(true, res.rows)
         })
