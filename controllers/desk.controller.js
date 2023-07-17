@@ -138,8 +138,6 @@ const getTemplates = (req, res) => {
 const verifySpaceUser = (req, res) => {
     const { admin_id, space_id, token } = req.body;
 
-    console.log("verifySpaceUser:");
-
     return Desk.verifySpace(admin_id, space_id, token, (ack, message) => {
         if (ack) return res.status(200).json(message);
         return res.status(400).json(message)
