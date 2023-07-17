@@ -1,9 +1,13 @@
 const sql = require('./db.model');
 const verifyLspace = require('./verifyLspace');
 
+const {getClientWithCredentials} = require("../utility/mypgclient")
+
 const App = function (app) {
     this.username = app.username
 }
+
+App.getClientWithCredentials = getClientWithCredentials
 
 App.demoModel = (adminId, result) => {
     var statusInfo = { status: false, ack: "Data not updated", data: { userId: 0 } }
@@ -417,73 +421,31 @@ App.AppDataInsert = (adminId, appName, configs, Name, result) => {
 
     const { AccountID, ApiKey } = configs;
 
-
-    // Desk.verifySpace(adminId, AccountID, ApiKey, (ack, message) => {
-
-    //     if (ack) {
-
-    //         let query = `INSERT INTO applications (AppName, adminId, configs, Name) VALUES  (?,?,?,?);`;
-    //         sql.query(query, [appName, adminId, JSON.stringify(configs), Name], (err, res) => {
-    //             // console.log("res",res);
-    //             if (res) {
-    //                 if (res.length == 0) {
-    //                     return result(statusInfo);
-    //                 } else {
-    //                     statusInfo.status = true;
-    //                     statusInfo.data = res[0] ? res[0] : '';
-    //                     statusInfo.ack = `${appName} App Added Successfully!`;
-    //                     return result(statusInfo);
-    //                 }
-    //             } else if (err) {
-    //                 return result(err);
-    //             }
-    //         });
-
-    //     } else {
-
-    //         statusInfo.ack = message;
-    //         return result(statusInfo)
-
-    //     }
-
-    // })
-
     new Promise((resolve, reject) => {
-        App.DbConfigs(adminId, (ack, data) => {
-            const { Client } = require('pg');
-
+        App.DbConfigs(adminId, async (ack, data) => {
             if (ack) {
+                console.log('>>>>>>USING CUSTOME DB<<<<<<<<<<');
+
                 data = data[0].configs
-                const deskConnection = new Client({
+                const dbconfigs = {
                     user: data.USER,
                     host: data.HOST,
                     database: data.DATABASE,
                     password: data.PASSWORD,
                     port: data.PORT
-                });
-
-                deskConnection.connect((err) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(deskConnection);
-                    }
-                });
+                }
+                const client = await getClientWithCredentials(dbconfigs)
+                resolve(client)
             } else {
-                console.log('>>>>>>>>>>>>>>>>>>USING SPACE DB');
-                const deskConnection = new Client()
-                deskConnection.connect((err) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(deskConnection);
-                    }
-                });
+                console.log('>>>>>>USING SPACE DB<<<<<<<<<');
+
+                const client = await getClientWithCredentials({});
+                resolve(client)
             }
         });
     }).then(dbconn => {
         verifyLspace(AccountID,ApiKey,dbconn,(ack,data)=>{
-            
+            // insert into the mysql crm db
             if (ack) {
                 let query = `INSERT INTO applications (AppName, adminId, configs, Name) VALUES  (?,?,?,?);`;
                 sql.query(query, [appName, adminId, JSON.stringify(configs), Name], (err, res) => {
@@ -509,9 +471,6 @@ App.AppDataInsert = (adminId, appName, configs, Name, result) => {
             }
         })
     })
-
-
-
 }
 
 App.AppDataList = (adminId, result) => {

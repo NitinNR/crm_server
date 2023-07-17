@@ -4,7 +4,6 @@ const { getDbConfigs } = require("../configs/desk.config");
 Desk = () => { }
 
 Desk.get_user_list = (predata, callback) => {
-
     const page_size = predata.page_size
     const adminId = predata.admin_id
 
@@ -20,11 +19,11 @@ Desk.get_user_list = (predata, callback) => {
 
     // dbconnection.connect()
     getDbConfigs(adminId).then(dbconnection => {
-
         dbconnection?.query(get_user_list, async (err, res) => {
 
             if (err) {
                 console.log(err);
+                await dbconnection.end()
                 ack = false
                 return callback(ack, [])
             } else {
@@ -51,7 +50,10 @@ Desk.get_filter_list = (predata, callback) => {
     getDbConfigs(adminId).then(dbconnection => {
 
         dbconnection.query(get_filteruser_list, async (err, res) => {
-            if (err) return callback(ack, [])
+            if (err) {
+                await dbconnection.end()
+                return callback(ack, [])
+            }
             else {
                 const get_filteruser_count = `select count(*) as total from "contacts" where account_id = ${account_id} and phone_number like '%${phone_number}%'`
                 const total = await getTotalCount(dbconnection, get_filteruser_count)
@@ -69,8 +71,12 @@ Desk.get_labels = (adminId, account_id, callback) => {
     FROM "labels" join tags on(labels.title = tags.name) where account_id = ${account_id}`
     getDbConfigs(adminId).then(dbconnection => {
 
-        dbconnection?.query(get_labels, (err, res) => {
-            if (err) return callback(ack, [])
+        dbconnection?.query(get_labels, async (err, res) => {
+            if (err) {
+                await dbconnection.end()
+
+                return callback(ack, [])
+            }
 
             const labels = res.rows
             ack = true
@@ -103,7 +109,10 @@ Desk.get_tag_based_users = ({ adminId, account_id, page_size, offset, tags }, ca
 
         dbconnection.query(ut_query, async (err, res) => {
             console.log(res.length);
-            if (err) return callback(false, [])
+            if (err) {
+                await dbconnection.end()
+                return callback(false, [])
+            }
             const total_qury = `SELECT count( DISTINCT contacts.*) as total
         FROM contacts 
         INNER JOIN taggings 
@@ -135,7 +144,7 @@ Desk.get_dashboard_details = (adminId, desk_account_id, callback) => {
     (SELECT COUNT(*) FROM contacts WHERE account_id = ${desk_account_id} AND created_at > now() - INTERVAL '30 day') AS uinterval,
     (SELECT COUNT(*) FROM messages WHERE account_id = ${desk_account_id} AND created_at > now() - INTERVAL '24 hour') AS ainterval,
     (SELECT COUNT(*) FROM messages WHERE account_id = ${desk_account_id} AND content != '' AND created_at > now() - INTERVAL '30 day') AS monthlyMsgreport;`
-        dbconnection?.query(query, (err, res) => {
+        dbconnection?.query(query, async (err, res) => {
             res = res.rows;
             if (res) {
 
@@ -151,12 +160,21 @@ Desk.get_dashboard_details = (adminId, desk_account_id, callback) => {
                     statusInfo.ack = "Data found!";
                 }
                 // console.log(statusInfo);
-            } else if (err) { return callback(false, []); }
+            } else if (err) {
+                await dbconnection.end()
+
+                return callback(false, []);
+            }
 
             const recent_users_query = `SELECT * from contacts where account_id = ${desk_account_id} and phone_number <> 'NULL' ORDER BY id DESC LIMIT 6;`;
-            dbconnection?.query(recent_users_query, (err2, res2) => {
+            dbconnection?.query(recent_users_query, async (err2, res2) => {
+                // console.log(res2);
                 res2 = res2.rows
-                if (res2) {
+                if (err2) {
+                    await dbconnection.end()
+
+                }
+                else if (res2) {
 
                     let recent_users = []
                     res2.forEach(user => {
@@ -172,8 +190,10 @@ Desk.get_dashboard_details = (adminId, desk_account_id, callback) => {
                 WHERE account_id = ${desk_account_id}
                 GROUP BY year, month;`
 
-                dbconnection?.query(userEngements_query, (err3, res3) => {
+                dbconnection?.query(userEngements_query, async (err3, res3) => {
                     res3 = res3.rows
+                    await dbconnection.end()
+
                     if (res3) {
 
                         let userengagements = {}
@@ -245,7 +265,7 @@ Desk.get_user_messages = (predata, callback) => {
 
         dbconnection.query(get_user_messages, [account_id, page_size, offset], async (err, res) => {
             if (err) {
-                console.log(err);
+                await dbconnection.end()
                 return callback(false, [])
             } else {
                 const get_allmessage_count = `SELECT count(*) as total
@@ -273,6 +293,7 @@ Desk.get_whatsapp_inboxes = (adminId, account_id, callback) => {
         // console.log(dbconnection);
 
         dbconnection.query(whatsapp_inboxes_query, [account_id], async (err, res) => {
+            await dbconnection.end()
             if (err) return callback(false, [])
             return callback(true, res.rows)
         })
@@ -285,7 +306,7 @@ Desk.get_whatsapp_templates = (adminId, account_id, channel_id, callback) => {
     getDbConfigs(adminId).then(dbconnection => {
 
         dbconnection.query(whatsapp_template_query, [channel_id, account_id], async (err, res) => {
-            // console.log(err, res);
+            await dbconnection.end()
             if (err) return callback(false, [])
             return callback(true, res.rows)
         })
@@ -312,6 +333,7 @@ Desk.get_contacts_based_on_tags = (adminId, account_id, tags, callback) => {
 
 
         dbconnection.query(contacts_query, [account_id], async (err, res) => {
+            await dbconnection.end()
             if (err) return callback(false, [])
             return callback(true, res.rows)
         })
@@ -320,12 +342,13 @@ Desk.get_contacts_based_on_tags = (adminId, account_id, tags, callback) => {
 
 Desk.get_all_contacts = async (adminId, account_id, offset, chunksize) => {
 
-    return new Promise((resolve,reject) => {
+    return new Promise((resolve, reject) => {
 
         const all_query = `SELECT id,phone_number FROM contacts WHERE account_id = $1 ORDER BY "id" LIMIT ${chunksize} OFFSET ${offset}`;
         getDbConfigs(adminId).then(dbconnection => {
 
             dbconnection.query(all_query, [account_id], async (err, res) => {
+                await dbconnection.end()
                 if (err) return reject({ data: [] })
                 return resolve({ data: res.rows })
             })
@@ -353,6 +376,7 @@ Desk.get_whatsapp_channel_details = (adminId, account_id, callback) => {
     getDbConfigs(adminId).then(dbconnection => {
 
         dbconnection.query(wa_query, [account_id], async (err, res) => {
+            await dbconnection.end()
             if (err) return callback(false, [])
             return callback(true, res.rows)
         })
@@ -370,6 +394,7 @@ Desk.verifySpace = (adminId, space_id, user_token, callback) => {
     getDbConfigs(adminId).then(dbconnection => {
 
         dbconnection.query(verify_query, [space_id], async (err, res) => {
+            await dbconnection.end()
 
             if (err) return callback(false, [])
 
@@ -389,6 +414,7 @@ Desk.verifySpace = (adminId, space_id, user_token, callback) => {
 
 const getTotalCount = async (dbconnection, total_qury) => {
     const res = await dbconnection.query(total_qury)
+    await dbconnection.end()
     return res.rows[0]?.total ? res.rows[0].total : 0
 }
 
