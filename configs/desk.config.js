@@ -5,36 +5,24 @@ const getDbConfigs = (adminId) => {
 
 
   return new Promise((resolve, reject) => {
-    App.DbConfigs(adminId, (ack, data) => {
+    App.DbConfigs(adminId, async (ack, data) => {
       if (ack) {
+        console.log('>>>>>> Using PRIVATE DB <<<<<<<<');
+
         data = data[0].configs;
-        const deskConnection = new Pool({
+        const dbconfigs = {
           user: data.USER,
           host: data.HOST,
           database: data.DATABASE,
           password: data.PASSWORD,
           port: data.PORT
-        });
-
-        deskConnection.connect((err) => {
-          if (err) {
-            return reject(err);
-          } else {
-            console.log('>>>>>> Using Private DB <<<<<<<<');
-            return resolve(deskConnection);
-          }
-        });
+        }
+        const client = await App.getClientWithCredentials(dbconfigs)
+        return resolve(client)
       } else {
         console.log('>>>>>> Using LSPACE DB <<<<<<<<');
-
-        const deskConnection = new Pool();
-        deskConnection.connect((err) => {
-          if (err) {
-            return reject(err);
-          } else {
-            return resolve(deskConnection);
-          }
-        });        
+        const client = await App.getClientWithCredentials({})
+        return resolve(client)
       }
     });
   });
