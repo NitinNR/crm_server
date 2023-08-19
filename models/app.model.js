@@ -444,7 +444,6 @@ App.AppDataInsert = (adminId, appName, configs, Name, result) => {
             }
         });
     }).then(dbconn => {
-        console.log("IN THEN >>>>>>>>.");
         verifyLspace(AccountID,ApiKey,dbconn,(ack,data)=>{
             // insert into the mysql crm db
             if (ack) {

@@ -131,7 +131,6 @@ Desk.get_tag_based_users = ({ adminId, account_id, page_size, offset, tags }, ca
 }
 
 Desk.get_dashboard_details = (adminId, desk_account_id, callback) => {
-    console.log(adminId, desk_account_id);
 
     let dbconnection = null;
     getDbConfigs(adminId).then(conn => {
