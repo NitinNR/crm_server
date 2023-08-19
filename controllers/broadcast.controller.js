@@ -1,10 +1,14 @@
 const Broadcast = require("../models/broadcast.model.js");
 const setBroadcast = require("../utility/broadcaster.js")
 const { pagination, paginate } = require("../utility/paginate.js");
-const CronParser = require('cron-parser');
+// const CronParser = require('cron-parser');
+// const logger = require('../utility/logger');
 
 
 const getBroadcastList = (req, res) => {
+    
+    // logger.info("broadcast_details:");
+
     const { admin_id, page, pageSize, filterName, space_id } = req.query;
     const { page_size, offset } = paginate({ page, pageSize })
     Broadcast.list_broadcast(admin_id, space_id, page_size, offset, filterName, (ack, data) => {
@@ -18,10 +22,13 @@ const getBroadcastList = (req, res) => {
 
 const createBroadcast = (req, res) => {
     const { account_id, broadcast_details, mytz } = req.body;
+    console.log(broadcast_details);
+    // logger.info(`broadcast_details`,broadcast_details);
     Broadcast.create_broadcast(account_id, broadcast_details, mytz, (ack, data) => {
         if (ack) {
             const bid = data.insertId;
             const cron_string = getCronString(broadcast_details.scheduleDate)
+            // logger.info('cron string',cron_string)
             setBroadcast.scheduleWhatsAppBroadCast(cron_string, account_id, bid)
             return res.status(200).json(data)
             // schedule the broadcast from here ...
@@ -48,14 +55,16 @@ const getBroadcast = (req, res) => {
 const updateBroadcast = (req, res) => {
     const { account_id, broadcast_id, broadcast_details } = req.body;
     console.log(broadcast_details);
+
+    // logger.debug(broadcast_details)
     Broadcast.update_broadcast(account_id, broadcast_id, broadcast_details, (ack, data) => {
         if (ack) {
             const bid = broadcast_id;
             // // console.log(`minutes:${minutes} hours:${hours} dayOfMonth:${dayOfMonth} monthi:${month}`);
             const cron_string = getCronString(broadcast_details.scheduleDate)
-
+            // logger.info('cron string',cron_string)
+            console.log(cron_string);
             setBroadcast.scheduleWhatsAppBroadCast(cron_string, account_id, bid)
-
             return res.status(200).json(data)
             // schedule the broadcast from here ...
 
