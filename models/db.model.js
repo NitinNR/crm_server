@@ -7,7 +7,7 @@ let connection = mysql.createPool({
     password: dbConfig.PASSWORD,
     database: dbConfig.DB,
     port:dbConfig.DB_PORT,
-    timezone: 'UTC',
+    // timezone: 'UTC',
     // waitForConnections: true,
 })
 

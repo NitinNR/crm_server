@@ -106,25 +106,25 @@ function sendWhatsApp(admin_id, space_id, contacts, broadcast_details, contacts_
       const phone_number_id = account_provider_configs.phone_number_id;
       const api_key = account_provider_configs.api_key;
       const template_id = broadcast_details.template_id;
+      const template_attrs = broadcast_details.template_attrs;
       const template = account_configs.message_templates.filter((template) => template.id === `${template_id}`)[0];
       const template_name = template.name
       const code = template.language
 
       if (contacts_type === 0) {
         for (let i = 0; i < contacts.length; i++) {
-          console.log(phone_number_id, api_key, template_name, code, contacts[i].phone_number);
-          sendMessage(phone_number_id, api_key, template_name, code, contacts[i].phone_number)
+          sendMessage(phone_number_id, api_key, template_name, template_attrs, code, contacts[i].phone_number)
         }
       } else if (contacts_type === 1) {
         for (let i = 0; i < contacts.length; i++) {
-          sendMessage(phone_number_id, api_key, template_name, code, contacts[i])
+          sendMessage(phone_number_id, api_key, template_name, template_attrs, code, contacts[i])
         }
       } else {
         console.log("sending to alll");
         // send to all
         for await (const dataChunk of getDataChunks(admin_id, space_id)) {
           dataChunk?.data.forEach(contact => {
-            sendMessage(phone_number_id, api_key, template_name, code, contact.phone_number)
+            sendMessage(phone_number_id, api_key, template_name, template_attrs, code, contact.phone_number)
           });
           await new Promise(resolve => setTimeout(resolve, 6000));
 
