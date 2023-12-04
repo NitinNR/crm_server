@@ -54,11 +54,16 @@ App.findOne = (tablename, condition, result) => {
 
 
 App.update = (tablename, params, condition, result) => {
+    console.log("testtt");
     // var query = 'SELECT * FROM `mydql`'
     var statusInfo = { status: false, ack: "Data not updated", data: { userId: 0 } }
     let query = `UPDATE ${tablename} SET ${params} WHERE ${condition}`;
+    console.log("query:",query);
     sql.query(query, [], (err, res) => {
-        // console.log("res",res);
+
+        console.log("=====>>>>>>",res);
+        console.log(err);
+
         if (res) {
             if (res.length == 0) {
                 result(statusInfo);
@@ -69,8 +74,11 @@ App.update = (tablename, params, condition, result) => {
                 result(statusInfo);
             }
         } else if (err) {
-            console.log("ERROR", err);
-            result(err);
+            console.log("ERROR=>", err.message);
+            statusInfo.data = [];
+            statusInfo.ack = "Please try after some time !"
+            if(err.message.includes("Duplicate")){statusInfo.ack = "WhatsApp number already exist !"}
+            result(statusInfo);
         }
     });
 
@@ -138,7 +146,7 @@ App.Register = (name, email, password, companyName, chatbotNumber, website, resu
                 statusInfo.status = true;
                 statusInfo.data = res[0] ? res[0] : '';
                 statusInfo.ack = "Registration Successfull!";
-                console.log("res", res);
+                // console.log("res", res);
                 result(statusInfo);
             }
         } else if (err) {
@@ -151,7 +159,7 @@ App.Register = (name, email, password, companyName, chatbotNumber, website, resu
 // fetch all user/contacts records of admin
 
 App.getUserList = (adminId, startIndex, endIndex, filterData, selectedTags, result) => {
-    console.log("selected tags :", selectedTags);
+    // console.log("selected tags :", selectedTags);
     var statusInfo = { status: false, ack: "Data not found!", data: [], rowCount: 0 }
     const { filterValue, columnField, operatorValue, linkOperator, quickFilterValues } = filterData
     // console.log("filterData", filterData, selectedTags);
@@ -172,7 +180,7 @@ App.getUserList = (adminId, startIndex, endIndex, filterData, selectedTags, resu
     }
 
     let query = `SELECT * FROM \`user_list\` WHERE \`adminId\` = ? ${filterQuery ? `AND ${filterQuery}` : ''} ORDER BY user_id DESC;`;
-    console.log("filterQuery:", filterQuery);
+    // console.log("filterQuery:", filterQuery,query);
     if (selectedTags.length) {
         const tupleSelectedLabels = `(${selectedTags.join(",")})`;
         let multiquerystring = ""
@@ -188,9 +196,7 @@ App.getUserList = (adminId, startIndex, endIndex, filterData, selectedTags, resu
         GROUP BY user_list.user_id
         ORDER BY user_list.user_id DESC;`
 
-        // console.log("query :".query);
     }
-    // console.log("query", query);
     sql.query(query, [adminId], (err, res) => {
 
         if (res) {
@@ -328,6 +334,89 @@ App.getUserDetails = (adminId, result) => {
     });
 
 }
+
+App.addContacts = (adminId, userData, result) => {
+    try {
+        // console.log("exeData", userData);
+        var statusInfo = { status: false, ack: "Data not found!", data: { userInfo: {} } };
+
+        // Check for duplicates
+        const checkDuplicateQuery = 'SELECT email FROM user_list WHERE adminId = ? AND whatsapp_number IN (?)';
+        const emailsToCheck = userData.map((data) => data.userID);
+        console.log("emailsToCheck:", emailsToCheck);
+
+        sql.query(checkDuplicateQuery, [adminId, emailsToCheck], (err, duplicateRows) => {
+            if (err) {
+                console.log("ERROR", err);
+                statusInfo.ack = err;
+                result(statusInfo);
+                // result(err);
+                return;
+            }
+
+            // Filter out duplicates
+            const uniqueData = userData.filter((data) => {
+                const userID = data.userID;
+                return duplicateRows.some((row) => row.whatsapp_number === userID);
+            });
+
+            console.log("uniqueData", uniqueData, uniqueData.length);
+            if (uniqueData.length === 0) {
+                // All data is duplicate
+                statusInfo.ack = "Duplicates contacts found | Try again";
+                result(statusInfo);
+                return;
+            }
+
+            // Data validation
+            const invalidData = uniqueData.filter((data) => {
+                // Add your validation checks here
+                if (!data.Email || !data.FullName) {
+                    return true; // Invalid data
+                }
+
+                // You can add more validation checks as needed
+
+                return false; // Valid data
+            });
+
+            if (invalidData.length > 0) {
+                // Some data is invalid
+                statusInfo.ack = "Some data is invalid";
+                result(statusInfo);
+                return;
+            }
+
+            // Prepare data for insertion
+            const query = 'INSERT INTO user_list (adminId, whatsapp_number, fullName, email, displayName, capturedData) VALUES ?';
+            const values = uniqueData.map((data) => [
+                adminId,
+                data.userID,
+                data.FullName,
+                data.Email,
+                data.FullName,
+                '[]',
+            ]);
+
+            // Insert valid data into the database
+            sql.query(query, [values], (err, res) => {
+                if (err) {
+                    console.log("ERROR", err);
+                    statusInfo.ack = err;
+                    result(statusInfo);
+                } else {
+                    statusInfo.ack = "Data imported successfully";
+                    statusInfo.status = true;
+                    result(statusInfo);
+                }
+            });
+            // result(statusInfo);
+        });
+    } catch (error) {
+        result(error);
+    }
+};
+
 
 
 // ---------------------------- REPORTS -------------------------------------

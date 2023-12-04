@@ -1,10 +1,9 @@
-const Broadcast = require("../models/broadcast.model.js");
+const Broadcast = require("../models/broadcast2.model.js");
 const setBroadcast = require("../utility/broadcaster.js")
 const { pagination, paginate } = require("../utility/paginate.js");
 // const CronParser = require('cron-parser');
 // const logger = require('../utility/logger');
 
-// const addQue = require("../utility/mybull.js");
 
 const getBroadcastList = (req, res) => {
     
@@ -25,15 +24,11 @@ const createBroadcast = (req, res) => {
     const { account_id, broadcast_details, mytz } = req.body;
     console.log(broadcast_details);
     // logger.info(`broadcast_details`,broadcast_details);
-    Broadcast.create_broadcast(account_id, broadcast_details, mytz, (ack, data,source=false) => {
+    Broadcast.create_broadcast(account_id, broadcast_details, mytz, (ack, data) => {
         if (ack) {
             const bid = data.insertId;
             const cron_string = getCronString(broadcast_details.scheduleDate)
-            setBroadcast.scheduleWhatsAppBroadCast(cron_string, account_id, bid,source)
-
-            // set task to que
-            // addQue.assign_task("sendmsg",setBroadcast.scheduleWhatsAppBroadCast(cron_string, account_id, bid))
-
+            setBroadcast.scheduleWhatsAppBroadCast(cron_string, account_id, bid)
             return res.status(200).json(data)
         }else{
             return res.status(200).json(data)

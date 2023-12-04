@@ -9,6 +9,7 @@ Broadcast.list_broadcast = (adminId, space_id, page_size, offset, filterName, ca
     if (filterName) broadcast_list = `select * from broadcasts where admin_id = ? and title like CONCAT('%', ?, '%') LIMIT ${page_size} OFFSET ${offset}`;
     dbconn.query(broadcast_list, [adminId, filterName], async (err, res) => {
         if (err) return callback(false, { message: "error occured" })
+
         desk.get_whatsapp_inboxes(adminId, space_id, (ack, data) => {
             if (ack) {
 
@@ -16,7 +17,7 @@ Broadcast.list_broadcast = (adminId, space_id, page_size, offset, filterName, ca
                     return new Promise((resolve, reject) => {
                         res.map((item, idex) => {
                             for (var i = 0; i < data.length; i++) {
-                                if (data[i].id === item.inbox_id) {
+                                if (data[i].id === item.inbox_id && item.source !== "Channel") {
                                     res[idex].inbox_name = data[i].name;
                                     break;
                                 } else {
@@ -59,7 +60,8 @@ Broadcast.create_broadcast = (adminId, broadcast_details, mytz, callback) => {
     console.log(mytz, ":mytz");
 
     try {
-        let { title, inbox, template, scheduleDate, audienceType, audience, var_image, var_video} = broadcast_details;
+        let { title, inbox,channel, template, scheduleDate, audienceType, audience, var_image, var_video} = broadcast_details;
+        const source = inbox?"Application":"Channel"
 
         //
         const extractedData = {};
@@ -76,15 +78,15 @@ Broadcast.create_broadcast = (adminId, broadcast_details, mytz, callback) => {
         if (typeof (audience) === 'object') audience = audience.join(",")
         else audience = audience.replace("\n", ",")
         
-
         var milisecs = new Date(scheduleDate).getTime();
-        let create_broadcast_query = `insert into broadcasts (admin_id,title,inbox_id,template_id,template_attrs,schedule_at,tz,audience_type,audience) values(?,?,?,?,?,?,?,?,?)`;
-        dbconn.query(create_broadcast_query, [adminId, title, inbox, template,template_vars, milisecs, mytz, audienceType, audience], (err, res) => {
+        let create_broadcast_query = `insert into broadcasts (admin_id,title,${inbox?'inbox_id':'channel_id'},template_id,template_attrs,schedule_at,tz,audience_type,audience,source) values(?,?,?,?,?,?,?,?,?,?)`;
+        dbconn.query(create_broadcast_query, [adminId, title, inbox?inbox:channel, template,template_vars, milisecs, mytz, audienceType, audience,source], (err, res) => {
+
             if (err) {
                 console.log(err,"errr");
                 return callback(false, { status: 400 })
             }
-            return callback(true, res)
+            return callback(true, res,source)
         })
     } catch (e) {
         console.log("e",e);
