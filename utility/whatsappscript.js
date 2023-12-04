@@ -15,6 +15,7 @@ const sendTemplate = async (phone_number_id, api_key, template_name, code, phone
         }
     };
 
+
     return sendMessage(phone_number_id, api_key, data);
 }
 
@@ -208,6 +209,7 @@ const getAccountTemplateByID = async (template_id, access_token) => {
     } catch (error) {
         console.log(error.message);
     }
+
 
 }
 

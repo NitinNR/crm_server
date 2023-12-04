@@ -62,6 +62,7 @@ Broadcast.create_broadcast = (adminId, broadcast_details, mytz, callback) => {
     try {
         let { title, inbox,channel, template, scheduleDate, audienceType, audience, var_image, var_video} = broadcast_details;
         const source = inbox?"Application":"Channel"
+
         //
         const extractedData = {};
         for (const key in broadcast_details) {
@@ -80,6 +81,7 @@ Broadcast.create_broadcast = (adminId, broadcast_details, mytz, callback) => {
         var milisecs = new Date(scheduleDate).getTime();
         let create_broadcast_query = `insert into broadcasts (admin_id,title,${inbox?'inbox_id':'channel_id'},template_id,template_attrs,schedule_at,tz,audience_type,audience,source) values(?,?,?,?,?,?,?,?,?,?)`;
         dbconn.query(create_broadcast_query, [adminId, title, inbox?inbox:channel, template,template_vars, milisecs, mytz, audienceType, audience,source], (err, res) => {
+
             if (err) {
                 console.log(err,"errr");
                 return callback(false, { status: 400 })
