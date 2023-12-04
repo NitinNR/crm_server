@@ -1,12 +1,15 @@
 const cron = require('node-cron');
 const broadcastModel = require("../models/broadcast.model");
 const app = require("../models/app.model");
+const label = require("../models/label.model");
 const desk = require("../models/desk.model");
 
+const bullmq = require("../utility/mybull")
 
+const { getWaCloudChannelByFilter } = require("../models/channel.model")
 
 //
-const { sendMessage } = require("./whatsappscript")
+const { sendMessage, getAccountTemplates,getAccountTemplateByID } = require("./whatsappscript")
 
 function scheduleJob(cronSchedule) {
   cron.schedule(cronSchedule, () => {
@@ -14,68 +17,159 @@ function scheduleJob(cronSchedule) {
   });
 }
 
-function scheduleWhatsAppBroadCast(cronSchedule, account_id, broadcastId) {
-  cron.schedule(cronSchedule, () => {
-    console.log(`Running at ${new Date()} a task broadcastId : ${broadcastId}`);
-    doPreperation(account_id, broadcastId)
-  });
+function scheduleWhatsAppBroadCast(cronSchedule, account_id, broadcastId, source) {
+  // cron.schedule(cronSchedule, () => {
+  //   console.log(`Running at ${new Date()} a task broadcastId : ${broadcastId}`);
+  //   // here
+
+  //   doPreperation(account_id, broadcastId, source)
+  // });
+  doPreperation(account_id, broadcastId, source)
+
 }
 
-function doPreperation(account_id, broadcastId) {
+function doPreperation(account_id, broadcastId, source) {
   // crm Applications details to get the space_id
-  app.GetApp(account_id, (ack, data) => {
-    if (ack) {
-      if (data.length === 1) {
-        const space_id = data[0].configs.AccountID
 
-        // Broadacst details from which to get the tags
-        get_broadcast_details(account_id, broadcastId, async (ack, broadcast_details) => {
+  if (source === "Application") {
+    app.GetApp(account_id, (ack, data) => {
+      if (ack) {
+        if (data.length === 1) {
+          const space_id = data[0].configs.AccountID
 
-          // console.log("broadcast_details:", broadcast_details);
-          if (ack) {
-            const currentTime = new Date().getTime()
-            const schedule_date = broadcast_details.schedule_at;
+          // Broadacst details from which to get the tags
+          get_broadcast_details(account_id, broadcastId, async (ack, broadcast_details) => {
 
-            const currentDateTime = new Date(currentTime).setSeconds(0, 0)
-            const scheduleDateTime = new Date(schedule_date).setSeconds(0, 0)
+            // console.log("broadcast_details:", broadcast_details);
+            if (ack) {
+              const currentTime = new Date().getTime()
+              const schedule_date = broadcast_details.schedule_at;
 
-            if (currentDateTime === scheduleDateTime) {
-              console.log("going for schedule");
-              let contacts = null;
-              if (broadcast_details.audience_type === 0) {
-                console.log("get tag based contacts");
-                const tags = broadcast_details.audience.split(",")
-                console.log("space_id tags:", space_id, tags);
-                // get the contacts details based on the tags
-                desk.get_contacts_based_on_tags(account_id, space_id, tags, (ack, data) => {
-                  if (ack && data.length > 0) {
-                    contacts = data
-                    sendWhatsApp(account_id, space_id, contacts, broadcast_details, 0)
-                  } else {
-                    console.log("eeeeeeeeeeeeetttttttt");
-                    console.log(ack, data);
+              const currentDateTime = new Date(currentTime).setSeconds(0, 0)
+              const scheduleDateTime = new Date(schedule_date).setSeconds(0, 0)
+
+              if (currentDateTime === scheduleDateTime) {
+                console.log("going for schedule");
+                let contacts = null;
+                if (broadcast_details.audience_type === 0) {
+                  console.log("get tag based contacts");
+                  const tags = broadcast_details.audience.split(",")
+                  console.log("space_id tags:", space_id, tags);
+                  // get the contacts details based on the tags
+                  desk.get_contacts_based_on_tags(account_id, space_id, tags, (ack, data) => {
+                    if (ack && data.length > 0) {
+                      contacts = data
+                      sendWhatsApp(account_id, space_id, contacts, broadcast_details, 0)
+                    } else {
+                      console.log("eeeeeeeeeeeeetttttttt");
+                      console.log(ack, data);
+                    }
+                  })
+
+                } else if (broadcast_details.audience_type === 1) {
+                  console.log("custome contacts");
+                  contacts = broadcast_details.audience
+                  contacts = contacts.split(",")
+                  sendWhatsApp(account_id, space_id, contacts, broadcast_details, 1)
+                } else {
+                  sendWhatsApp(account_id, space_id, contacts, broadcast_details, 2)
+                }
+
+              } else {
+                console.log("schedule time updated ----------------");
+              }
+            }
+
+          })
+
+        }
+      }
+    })
+
+  } else if (source === "Channel") {
+
+    get_broadcast_details(account_id, broadcastId, async (ack, broadcast_details) => {
+
+      // console.log("broadcast_details:", broadcast_details);
+      if (ack) {
+        const currentTime = new Date().getTime()
+        const schedule_date = broadcast_details.schedule_at;
+
+        const currentDateTime = new Date(currentTime).setSeconds(0, 0)
+        const scheduleDateTime = new Date(schedule_date).setSeconds(0, 0)
+
+        if (currentDateTime === scheduleDateTime) {
+        // if (scheduleDateTime) {
+          console.log("going for schedule");
+          let contacts = null;
+          if (broadcast_details.audience_type === 0) {
+            console.log("get tag based contacts");
+            const tags = broadcast_details.audience.split(",")
+
+            // get tag ids from thier name
+            label.findLabels(account_id, tags, (label_ids) => {
+              if (label_ids.status) {
+                let tag_ids = label_ids.data;
+                tag_ids = `(${tag_ids.map(tag_idobj => { return `'${tag_idobj.id}'` })})`;
+                label.get_tag_based_users_only(account_id, tag_ids, async (data) => {
+                  if (data.status) {
+
+                    // credentials fetch from db here, one time
+                    const getcreds = await getWaCloudChannelByFilter(account_id, [{ column: "provider", value: "\"WhatsApp Cloud\"", action: "eq" }])
+                    if (!getcreds.status) return
+
+                    const phone_number_id = getcreds.data.provider_config.phoneNumberID;
+                    const whatsapp_account_id = getcreds.data.provider_config.businessAccID;
+                    const access_token = getcreds.data.provider_config.ApiKey;
+
+                    console.log("temp id:",broadcast_details.template_id);
+
+                    const TemplateNameAndCode = await getAccountTemplateByID(broadcast_details.template_id,access_token);
+                    if(!TemplateNameAndCode) return;
+
+                    const creds = { phone_number_id, access_token };
+                    const contacts = data.data.users;
+                    const bmq = new bullmq(`${account_id}-${broadcastId}-whamsg`);
+                    contacts.forEach(async contact => {
+                      const template_code = TemplateNameAndCode.language;
+                      const template_name = TemplateNameAndCode.name;
+                      console.log("++++++++++++",contact);
+                      await bmq.addJob({ contact, account_id, broadcastId, creds,template_code,template_name }, { delay: 1000 })
+                    });
+
+
+                    // bmq.start();
                   }
                 })
 
-              } else if (broadcast_details.audience_type === 1) {
-                console.log("custome contacts");
-                contacts = broadcast_details.audience
-                contacts = contacts.split(",")
-                sendWhatsApp(account_id, space_id, contacts, broadcast_details, 1)
               } else {
-                sendWhatsApp(account_id, space_id, contacts, broadcast_details, 2)
+                console.log(">>>>>couldn't found tag ids");
               }
 
-            } else {
-              console.log("schedule time updated ----------------");
-            }
+
+
+            });
+          } else if (broadcast_details.audience_type === 1) {
+            console.log("custome contacts");
+            contacts = broadcast_details.audience
+            contacts = contacts.split(",")
+            sendWhatsApp(account_id, space_id, contacts, broadcast_details, 1)
+          } else {
+            sendWhatsApp(account_id, space_id, contacts, broadcast_details, 2)
           }
 
-        })
-
+        } else {
+          console.log("schedule time updated ----------------");
+          return;
+        }
+      } else {
+        return;
       }
-    }
-  })
+
+    })
+
+  }
+
 
 
   function get_broadcast_details(account_id, broadcastId, callback) {

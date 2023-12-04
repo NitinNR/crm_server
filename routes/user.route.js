@@ -1,4 +1,7 @@
 const authJwt = require("../middlewares/authJwt");
+const multer  = require('multer')
+const upload = require('../middlewares/fileUpload')
+
 
 const AccountController = require("../controllers/account.controller");
 const UserController = require("../controllers/user.controller");
@@ -36,6 +39,9 @@ module.exports = function(app){
     // User Details
     router.post("/UserDetails", UserController.UserDetails);
 
+    // Contact import
+    router.post("/contact-import", UserController.ImportContacts);
+
 
 // DASHBOARD Management
 
@@ -50,6 +56,9 @@ module.exports = function(app){
 
     // certain User Label List
     router.post("/labels", LabelController.UserLabel); 
+
+    // Get users based on Tags/Labels
+    router.post("/tag_based_list", LabelController.getTagBasedUsers);
 
     // User Label ADD/UPDATE/DELETE
     router.post("/label-update", LabelController.UserLabelsUpdate);
