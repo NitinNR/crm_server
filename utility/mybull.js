@@ -2,7 +2,7 @@
 const IORedis = require('ioredis');
 const connection = new IORedis();
 const { sendMessage, sendMessage2 } = require("./whatsappscript")
-
+const AppModel = require('../models/app.model')
 const { Worker, Queue, QueueScheduler } = require('bullmq');
 
 class Mybull {
@@ -40,9 +40,13 @@ class Mybull {
           language: { code: job.template_code }
         }
       };
-      console.log("data:",data);
-      sendMessage2(job.creds.phone_number_id, job.creds.access_token, data)
-      // here need start work i.e create seperate function to accept single contact and send the msg
+      const status = await sendMessage2(job.creds.phone_number_id, job.creds.access_token, data)
+      console.log("msg status :",status);
+      const {adminId, whatsapp_number, fullName} = job.contact
+      AppModel.AddMessageReport(adminId, whatsapp_number, fullName, "NULL", "template", status.status, (result)=>{
+        console.log("report log:",result);
+      })
+
     } catch (error) {
       console.error(`Error processing job ${job.id}: ${error.message}`);
       job.retry(); // Retry the job on error
