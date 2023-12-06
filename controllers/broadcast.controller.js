@@ -33,6 +33,7 @@ const createBroadcast = (req, res) => {
 
             // set task to que
             // addQue.assign_task("sendmsg",setBroadcast.scheduleWhatsAppBroadCast(cron_string, account_id, bid))
+
             return res.status(200).json(data)
         }else{
             return res.status(200).json(data)
