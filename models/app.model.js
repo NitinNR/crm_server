@@ -1,7 +1,7 @@
 const sql = require('./db.model');
 const verifyLspace = require('./verifyLspace');
 
-const {getClientWithCredentials} = require("../utility/mypgclient")
+const { getClientWithCredentials } = require("../utility/mypgclient")
 
 const App = function (app) {
     this.username = app.username
@@ -58,10 +58,10 @@ App.update = (tablename, params, condition, result) => {
     // var query = 'SELECT * FROM `mydql`'
     var statusInfo = { status: false, ack: "Data not updated", data: { userId: 0 } }
     let query = `UPDATE ${tablename} SET ${params} WHERE ${condition}`;
-    console.log("query:",query);
+    console.log("query:", query);
     sql.query(query, [], (err, res) => {
 
-        console.log("=====>>>>>>",res);
+        console.log("=====>>>>>>", res);
         console.log(err);
 
         if (res) {
@@ -77,7 +77,7 @@ App.update = (tablename, params, condition, result) => {
             console.log("ERROR=>", err.message);
             statusInfo.data = [];
             statusInfo.ack = "Please try after some time !"
-            if(err.message.includes("Duplicate")){statusInfo.ack = "WhatsApp number already exist !"}
+            if (err.message.includes("Duplicate")) { statusInfo.ack = "WhatsApp number already exist !" }
             result(statusInfo);
         }
     });
@@ -231,14 +231,13 @@ App.getDashboardDetails = (adminId, result) => {
     // nitin change =>
     let query = `select
     (SELECT COUNT(*) FROM user_list WHERE adminId = ${adminId}) as users,
-    (SELECT COUNT(*) FROM message_report WHERE adminId = ${adminId}) as message_report , 
+    (SELECT COUNT(*) FROM message_report WHERE adminId = ${adminId}) as message_report ,
     (SELECT COUNT(*) FROM user_list WHERE adminId=${adminId} AND DateTime > now() - INTERVAL 7 day) as uinterval , 
-    (SELECT COUNT(*) FROM message_report WHERE adminId=${adminId} AND DateTime > now() - INTERVAL 24 hour) as ainterval , 
+    (SELECT COUNT(*) FROM message_report WHERE adminId=${adminId} AND DateTime > now() - INTERVAL 24 hour) as ainterval ,
     (SELECT COUNT(*) FROM user_list WHERE adminId=${adminId} AND capturedData!='') as capdata,
-
     (SELECT COUNT(*) FROM message_report WHERE adminId=${adminId} AND message_content!='' AND DateTime > now() - INTERVAL 30 day) as monthlyMsgreport`
+
     sql.query(query, (err, res) => {
-        console.log('res.length', res.length)
         if (res) {
             if (res.length > 0) {
                 statusInfo.status = true;
@@ -533,7 +532,7 @@ App.AppDataInsert = (adminId, appName, configs, Name, result) => {
             }
         });
     }).then(dbconn => {
-        verifyLspace(AccountID,ApiKey,dbconn,(ack,data)=>{
+        verifyLspace(AccountID, ApiKey, dbconn, (ack, data) => {
             // insert into the mysql crm db
             if (ack) {
                 let query = `INSERT INTO applications (AppName, adminId, configs, Name) VALUES  (?,?,?,?);`;
@@ -551,12 +550,12 @@ App.AppDataInsert = (adminId, appName, configs, Name, result) => {
                         return result(err);
                     }
                 });
-    
+
             } else {
-    
+
                 statusInfo.ack = data;
                 return result(statusInfo)
-    
+
             }
         })
     })

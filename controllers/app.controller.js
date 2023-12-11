@@ -18,7 +18,7 @@ exports.DashboardDetails = (req, res) => {
   console.log("adminId--",adminId)
   App.getDashboardDetails(adminId,(data)=>{
     if(data){
-      // console.log("DATA",data)
+      console.log("DATA",data)
       res.status(200).json(data);
   }
   })
