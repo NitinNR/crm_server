@@ -20,4 +20,4 @@ yarn-error.log*
 
 error.log
 logs.log
-malware_remove_check.txt
+malware_remove_check.*

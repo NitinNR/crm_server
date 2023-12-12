@@ -1,7 +1,9 @@
 const dbconn = require("../models/db.model")
 const desk = require("../models/desk.model")
+const plan = require("../models/plan.model")
 
-Broadcast = () => { }
+Broadcast = () => {
+}
 
 Broadcast.list_broadcast = (adminId, space_id, page_size, offset, filterName, callback) => {
 
@@ -58,40 +60,56 @@ Broadcast.list_broadcast = (adminId, space_id, page_size, offset, filterName, ca
 
 Broadcast.create_broadcast = (adminId, broadcast_details, mytz, callback) => {
     console.log(mytz, ":mytz");
+    dbconn.query(`select(select count(id) from broadcasts where admin_id=?) as broadcasts_limit,
+    (select count(*) from user_list where adminId=?) as contacts_limit;`, [adminId, adminId], (err, res) => {
 
-    try {
-        let { title, inbox,channel, template, scheduleDate, audienceType, audience, var_image, var_video} = broadcast_details;
-        const source = inbox?"Application":"Channel"
+        if (err) {
+            return callback(false, { status: 400 });
+        } else {
+            const { broadcasts_limit, contacts_limit } = res[0];
 
-        //
-        const extractedData = {};
-        for (const key in broadcast_details) {
-            if (broadcast_details.hasOwnProperty(key)) {
-                if (/^var_\d+$/.test(key)) {
-                    extractedData[key] = broadcast_details[key];
+            plan.verifyPlan(adminId,broadcasts_limit,contacts_limit,((data)=>{
+
+                console.log("data====",data);
+                
+            }))
+
+            try {
+                let { title, inbox, channel, template, scheduleDate, audienceType, audience, var_image, var_video } = broadcast_details;
+                const source = inbox ? "Application" : "Channel";
+                //
+                const extractedData = {};
+                for (const key in broadcast_details) {
+                    if (broadcast_details.hasOwnProperty(key)) {
+                        if (/^var_\d+$/.test(key)) {
+                            extractedData[key] = broadcast_details[key];
+                        }
+                    }
                 }
-            }
-        }
-        const template_vars =JSON.stringify(Object.assign({},extractedData, {var_image,var_video}))
-        //
+                const template_vars = JSON.stringify(Object.assign({}, extractedData, { var_image, var_video }))
+                //
+                if (typeof (audience) === 'object') audience = audience.join(",")
+                else audience = audience.replace("\n", ",")
 
-        if (typeof (audience) === 'object') audience = audience.join(",")
-        else audience = audience.replace("\n", ",")
-        
-        var milisecs = new Date(scheduleDate).getTime();
-        let create_broadcast_query = `insert into broadcasts (admin_id,title,${inbox?'inbox_id':'channel_id'},template_id,template_attrs,schedule_at,tz,audience_type,audience,source) values(?,?,?,?,?,?,?,?,?,?)`;
-        dbconn.query(create_broadcast_query, [adminId, title, inbox?inbox:channel, template,template_vars, milisecs, mytz, audienceType, audience,source], (err, res) => {
+                var milisecs = new Date(scheduleDate).getTime();
+                let create_broadcast_query = `insert into broadcasts (admin_id,title,${inbox ? 'inbox_id' : 'channel_id'},template_id,template_attrs,schedule_at,tz,audience_type,audience,source) values(?,?,?,?,?,?,?,?,?,?)`;
+                dbconn.query(create_broadcast_query, [adminId, title, inbox ? inbox : channel, template, template_vars, milisecs, mytz, audienceType, audience, source], (err, res) => {
 
-            if (err) {
-                console.log(err,"errr");
+                    if (err) {
+                        console.log(err, "errr");
+                        return callback(false, { status: 400 })
+                    }
+                    return callback(true, res, source)
+                })
+            } catch (e) {
+                console.log("e", e);
                 return callback(false, { status: 400 })
             }
-            return callback(true, res,source)
-        })
-    } catch (e) {
-        console.log("e",e);
-        return callback(false, { status: 400 })
-    }
+
+        }
+    })
+
+
 }
 
 Broadcast.get_broadcast = (adminId, bid, callback) => {
@@ -109,7 +127,7 @@ Broadcast.get_broadcast = (adminId, bid, callback) => {
 
 Broadcast.update_broadcast = (adminId, broadcast_id, broadcast_details, callback) => {
     try {
-        let { title, inbox, template, scheduleDate, audienceType, audience,var_image,var_video } = broadcast_details;
+        let { title, inbox, template, scheduleDate, audienceType, audience, var_image, var_video } = broadcast_details;
 
         //
         const extractedData = {};
@@ -120,8 +138,8 @@ Broadcast.update_broadcast = (adminId, broadcast_id, broadcast_details, callback
                 }
             }
         }
-        const template_vars =JSON.stringify(Object.assign({},extractedData, {var_image,var_video}))
-        const template_attrs = template_vars ? template_vars : NULL 
+        const template_vars = JSON.stringify(Object.assign({}, extractedData, { var_image, var_video }))
+        const template_attrs = template_vars ? template_vars : NULL
         //
 
 
@@ -130,7 +148,7 @@ Broadcast.update_broadcast = (adminId, broadcast_id, broadcast_details, callback
         var milisecs = new Date(scheduleDate).getTime();
 
         let create_broadcast_query = `update broadcasts set title=?,inbox_id=?,template_id=?,template_attrs=?,schedule_at=?,audience_type=?,audience=? where admin_id=? and id=?`;
-        dbconn.query(create_broadcast_query, [title, inbox, template,template_attrs, milisecs, audienceType, audience, adminId, broadcast_id], (err, res) => {
+        dbconn.query(create_broadcast_query, [title, inbox, template, template_attrs, milisecs, audienceType, audience, adminId, broadcast_id], (err, res) => {
             if (err) {
                 return callback(false, { status: 400 })
             }

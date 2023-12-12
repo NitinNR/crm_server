@@ -20,9 +20,9 @@ exports.updatePlan = (req,res)=>{
     console.log("--------->",admin_id,plan_id);
     App.updatePlan(admin_id,plan_id,(data) => {
         if (data) {
-            res.status(200).json(data);
+            return res.status(200).json(data);
         } else if (data == 0) {
-            res.status(500).send({
+            return res.status(500).send({
                 message:
                     err.message || "Some error occurred try again."
             })
