@@ -232,10 +232,9 @@ const getAccountTemplates = async (whatsapp_account_id, access_token) => {
 
 }
 
-// Send a message with specified data for channel broadcast
+// Send a message for channel broadcast
 const sendMessage2 = async (phone_number_id, api_key, data) => {
     // const whatsapp_no = 
-    console.log("Sending message to", data.to);
     try {
         const config = {
             method: 'post',
@@ -248,6 +247,7 @@ const sendMessage2 = async (phone_number_id, api_key, data) => {
             data: JSON.stringify(data)
         };
         const response = await axios.request(config);
+        
         return response.status === 200 ? { status: true, data: response.data } : { status: false };
     } catch (error) {
         return { status: false, error: error.message };

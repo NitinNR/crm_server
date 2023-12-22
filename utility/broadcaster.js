@@ -18,13 +18,11 @@ function scheduleJob(cronSchedule) {
 }
 
 function scheduleWhatsAppBroadCast(cronSchedule, account_id, broadcastId, source) {
-  // cron.schedule(cronSchedule, () => {
-  //   console.log(`Running at ${new Date()} a task broadcastId : ${broadcastId}`);
-  //   // here
-
-  //   doPreperation(account_id, broadcastId, source)
-  // });
-  doPreperation(account_id, broadcastId, source)
+  cron.schedule(cronSchedule, () => {
+    console.log(`Running at ${new Date()} a task broadcastId : ${broadcastId}`);
+    doPreperation(account_id, broadcastId, source)
+  });
+  // doPreperation(account_id, broadcastId, source)
 
 }
 
@@ -54,7 +52,6 @@ function doPreperation(account_id, broadcastId, source) {
                 if (broadcast_details.audience_type === 0) {
                   console.log("get tag based contacts");
                   const tags = broadcast_details.audience.split(",")
-                  console.log("space_id tags:", space_id, tags);
                   // get the contacts details based on the tags
                   desk.get_contacts_based_on_tags(account_id, space_id, tags, (ack, data) => {
                     if (ack && data.length > 0) {
@@ -98,8 +95,8 @@ function doPreperation(account_id, broadcastId, source) {
         const currentDateTime = new Date(currentTime).setSeconds(0, 0)
         const scheduleDateTime = new Date(schedule_date).setSeconds(0, 0)
 
-        if (currentDateTime === scheduleDateTime) {
-        // if (scheduleDateTime) {
+        // if (currentDateTime === scheduleDateTime) {
+        if (scheduleDateTime) {
           console.log("going for schedule");
           let contacts = null;
           if (broadcast_details.audience_type === 0) {
@@ -122,8 +119,6 @@ function doPreperation(account_id, broadcastId, source) {
                     const whatsapp_account_id = getcreds.data.provider_config.businessAccID;
                     const access_token = getcreds.data.provider_config.ApiKey;
 
-                    console.log("temp id:",broadcast_details.template_id);
-
                     const TemplateNameAndCode = await getAccountTemplateByID(broadcast_details.template_id,access_token);
                     if(!TemplateNameAndCode) return;
 
@@ -133,7 +128,6 @@ function doPreperation(account_id, broadcastId, source) {
                     contacts.forEach(async contact => {
                       const template_code = TemplateNameAndCode.language;
                       const template_name = TemplateNameAndCode.name;
-                      console.log("++++++++++++",contact);
                       await bmq.addJob({ contact, account_id, broadcastId, creds,template_code,template_name }, { delay: 1000 })
                     });
 
@@ -189,8 +183,6 @@ function doPreperation(account_id, broadcastId, source) {
 
 
 function sendWhatsApp(admin_id, space_id, contacts, broadcast_details, contacts_type) {
-
-  console.log("===========contacts=========:", contacts);
 
   desk.get_whatsapp_channel_details(admin_id, space_id, async (ack, configs) => {
     if (ack) {

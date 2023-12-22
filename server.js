@@ -38,6 +38,7 @@ require("./routes/broadcast.route")(app);
 require("./routes/broadcast2.route")(app);
 require("./routes/channel.route")(app);
 require("./routes/whatsapp.route")(app);
+require("./routes/plan.route")(app);
 
 const PORT = process.env.PORT || 8085;
 app.listen(PORT, () => {
