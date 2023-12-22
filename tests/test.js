@@ -1,2 +1,10 @@
-const mybull = require("../utility/mybull");
-new mybull("test")
+const mysql = require('mysql2');
+const dbConfig = require('../configs/db.config');
+
+let connection = mysql.createPool({
+    host: dbConfig.HOST,
+    user: dbConfig.USER,
+    password: dbConfig.PASSWORD,
+    database: dbConfig.DB,
+    port:dbConfig.DB_PORT,
+})

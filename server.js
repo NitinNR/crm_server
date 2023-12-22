@@ -4,6 +4,7 @@ const multer = require("multer");
 const cookieParser = require("cookie-parser");
 const bodyParser = require('body-parser');
 const upload = require('./middlewares/fileUpload'); // Import the file upload middleware
+const dbconn = require("./models/db.model");
 
 const { scheduleJob, scheduleWhatsAppBroadCast } = require("./utility/broadcaster");
 
@@ -42,5 +43,11 @@ require("./routes/plan.route")(app);
 
 const PORT = process.env.PORT || 8085;
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}.`);
+  dbconn.getConnection((err,conn)=>{
+    if(err) console.log(err)
+    console.log("Connectd to DB");
+    console.log(`Server is running on http://localhost:${PORT}.`);
+    conn.release();
+  })
+  
 });
