@@ -45,7 +45,7 @@ const PORT = process.env.PORT || 8085;
 app.listen(PORT, () => {
   dbconn.getConnection((err,conn)=>{
     if(err) console.log(err)
-    console.log("Connectd to DB");
+    console.log("Connectd to Mysql DB");
     console.log(`Server is running on http://localhost:${PORT}.`);
     conn.release();
   })
