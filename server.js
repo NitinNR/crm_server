@@ -11,7 +11,7 @@ const { scheduleJob, scheduleWhatsAppBroadCast } = require("./utility/broadcaste
 const app = express();
 
 app.use(cors({
-  "origin": "*"
+  "origin": "https://testcrm.lifeel.in"
 }));
 app.use(express.json());
 app.use(bodyParser.json()); // Combine body parsers for JSON and url-encoded
@@ -40,6 +40,7 @@ require("./routes/broadcast2.route")(app);
 require("./routes/channel.route")(app);
 require("./routes/whatsapp.route")(app);
 require("./routes/plan.route")(app);
+require("./routes/payment.route")(app);
 
 const PORT = process.env.PORT || 8085;
 app.listen(PORT, () => {

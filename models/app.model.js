@@ -221,6 +221,37 @@ App.getUserList = (adminId, startIndex, endIndex, filterData, selectedTags, resu
     });
 };
 
+// Get admin users/contacts count
+
+App.getUserListCount = (adminId,result) => {
+
+    let query = "SELECT count(user_id) as user_count FROM user_list where adminId = ?";
+
+    sql.query(query, [adminId], (err, res) => {
+
+        if(err) return result([])
+        if(res){
+            return result(res)
+        }
+
+    });
+};
+
+
+App.getBroadcastCount = (adminId,result) => {
+
+    let query = "SELECT count(id) as broad_count FROM broadcasts where admin_id = ?";
+
+    sql.query(query, [adminId], (err, res) => {
+
+        if(err) return result([])
+        if(res){
+            return result(res)
+        }
+
+    });
+};
+
 // ---------------------------- DASHBOARD -------------------------------------
 
 // Get Dashboard details

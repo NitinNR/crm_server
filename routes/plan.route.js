@@ -1,4 +1,4 @@
-const {getPlans, updatePlan } = require("../controllers/plan.controller");
+const {getPlans, updatePlan,adminPlan,cancelPlan,getUserActivePlan, updatePlanV2 } = require("../controllers/plan.controller");
 
 var router = require('express').Router();
 
@@ -13,7 +13,13 @@ module.exports = function(app){
 
     // router.post("/account/update", AccountController.AccountUpdate);    
     router.get("/list",getPlans);
-    router.put("/update",updatePlan);
+
+    // router.put("/update",updatePlan);
+    router.put("/update",updatePlanV2);
+    
+    // router.get("/id",adminPlan);
+    router.get("/id",getUserActivePlan);
+    router.delete("/cancel",cancelPlan);
 
     // GLOBAL CONFIG    
     app.use("/api/plan", router);

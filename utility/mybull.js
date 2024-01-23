@@ -1,6 +1,6 @@
 // const { Queue,Worker } = require("bullmq");
-const IORedis = require('ioredis');
-const connection = new IORedis();
+// const IORedis = require('ioredis');
+// const connection = new IORedis();
 const { sendMessage, sendMessage2 } = require("./whatsappscript")
 const AppModel = require('../models/app.model')
 const { Worker, Queue, QueueScheduler } = require('bullmq');

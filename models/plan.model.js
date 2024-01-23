@@ -24,24 +24,30 @@ const getPlans = (result) => {
 
 }
 
-const getPlan = (plan_id) => {
-    let statusInfo = {};
-    const query = `SELECT * FROM plans where id=?`;
-    sql.query(query, [plan_id], (err, res) => {
-        if (res) {
-            if (res.length == 0) {
-                result(statusInfo);
-            } else {
-                statusInfo.status = true;
-                statusInfo.data = res;
-                statusInfo.ack = "Data found!";
-                result(statusInfo);
+const getPlan = async (plan_id) => {
+    console.log(plan_id,"<===");
+    let statusInfo = {status:false,data:{}};
+    const query = `SELECT * FROM plans where id=? limit 1`;
+
+    return await new Promise((resolve,reject)=>{
+
+        sql.query(query, [plan_id], (err, res) => {
+            if (res) {
+                if (res.length == 0) {
+                    reject(statusInfo);
+                } else {
+                    statusInfo.status = true;
+                    statusInfo.data = res;
+                    resolve(statusInfo);
+                }
+            } else if (err) {
+                console.log("ERROR", err);
+                reject(err);
             }
-        } else if (err) {
-            console.log("ERROR", err);
-            result(err);
-        }
-    });
+        });
+
+    })
+    
 
 }
 
@@ -116,9 +122,24 @@ const verifyPlan = (adminId, total_broadcasts, total_conatcts, result) => {
 
 }
 
+const getPlanByadminId = (adminId,result)=>{
+    const plan_data_query = "select plt.plan_id,pln.contacts_limit,pln.broadcasts_limit from plan_tracks as plt inner join plans as pln on plt.admin_id = ? where pln.id = plt.plan_id;"
+    sql.query(plan_data_query, [adminId], (err, res) => {
+
+        console.log(res);
+        if(err) return result([]);
+        if(res){
+            result(res)
+        }
+    })
+
+
+}
+
 module.exports = {
     getPlans,
     updatePlan,
     getPlan,
-    verifyPlan
+    verifyPlan,
+    getPlanByadminId
 }

@@ -66,14 +66,6 @@ Broadcast.create_broadcast = (adminId, broadcast_details, mytz, callback) => {
         if (err) {
             return callback(false, { status: 400 });
         } else {
-            const { broadcasts_limit, contacts_limit } = res[0];
-
-            plan.verifyPlan(adminId,broadcasts_limit,contacts_limit,((data)=>{
-
-                console.log("data====",data);
-                
-            }))
-
             try {
                 let { title, inbox, channel, template, scheduleDate, audienceType, audience, var_image, var_video } = broadcast_details;
                 const source = inbox ? "Application" : "Channel";

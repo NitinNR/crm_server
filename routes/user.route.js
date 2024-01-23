@@ -1,4 +1,5 @@
 const authJwt = require("../middlewares/authJwt");
+const PlanVerify = require("../middlewares/plan_verifier");
 const multer  = require('multer')
 const upload = require('../middlewares/fileUpload')
 
@@ -8,6 +9,7 @@ const UserController = require("../controllers/user.controller");
 const AppController = require("../controllers/app.controller");
 const LabelController = require("../controllers/label.controller");
 const AppIntController = require("../controllers/appInt.controller");
+
 
 var router = require('express').Router();
 
@@ -31,7 +33,7 @@ module.exports = function(app){
 
     router.post("/update", UserController.UserUpdate);
 
-    router.post("/create", UserController.UserCreate);
+    router.post("/create",PlanVerify.verify_contacts,UserController.UserCreate);
 
     // User Delete
     router.post("/delete", UserController.UserDelete);
