@@ -89,6 +89,7 @@ exports.UserDelete = (req, res) => {
 };
 
 exports.UserCreate = (req, res) => {
+    console.log("USER CREATION");
     const UserData = req.body;
     // console.log("UserCreate req  BODY",req.body);
     // console.log("req BODY capturedData",req.body.capturedData);s

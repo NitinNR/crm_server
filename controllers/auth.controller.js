@@ -38,6 +38,7 @@ exports.SignUp = async (req, res) => {
 };
 
 exports.SignIn = async (req, res) => {
+    console.log("TEST-->");
     const { email, password } = req.body;
 
     let statusInfo = {

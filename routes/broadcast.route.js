@@ -1,6 +1,6 @@
 const authJwt = require("../middlewares/authJwt");
 const {getBroadcastList,createBroadcast,getBroadcast,updateBroadcast,deleteBroadcast} = require("../controllers/broadcast.controller");
-
+const PlanVerify = require("../middlewares/plan_verifier");
 var router = require('express').Router();
 
 module.exports = function (app) {
@@ -16,7 +16,7 @@ module.exports = function (app) {
 
     router.get("/list", getBroadcastList);
     router.get("/get", getBroadcast);
-    router.post("/create", createBroadcast);
+    router.post("/create",PlanVerify.verify_broadcasts, createBroadcast);
     router.put("/update", updateBroadcast);
     router.delete("/delete", deleteBroadcast);
     app.use("/api/broadcast", router);
